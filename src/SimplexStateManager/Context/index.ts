@@ -1,17 +1,34 @@
 import { OneAboveAll } from "../OneAboveAll";
 
+type IRerenderFunction = React.Dispatch<React.SetStateAction<string | undefined>>;
+
 export default class {
   private storeKey = Math.random().toString();
+  private rerenderCallbacks: Record<string, Record<string, IRerenderFunction>> = { };
 
   constructor() {
     this.createStore();
   }
 
-  newState<ValueType>(key: string) {
+  newUseSimplexState<ValueType>(key: string, setUpdaterRef: IRerenderFunction) {
+    const updaterRefKey: string = Math.random.toString();
+
+    if (!this.rerenderCallbacks[key]) {
+      this.rerenderCallbacks[key] = { [updaterRefKey]: setUpdaterRef }
+    } else {
+      this.rerenderCallbacks[key][updaterRefKey] = setUpdaterRef;
+    }
+
     const dispatch = (value: ValueType) => this.setState<ValueType>(key, value);
     const getState = () => this.getState<ValueType>(key);
-    const useState = () => [getState(), dispatch] as [ValueType, (value: ValueType) => void];
-    return { dispatch, getState, useState };
+    const useSimplexState = () => [getState(), dispatch] as [ValueType, (value: ValueType) => void];
+    const destroyListener = () => {
+      if (this.rerenderCallbacks?.[key]?.[updaterRefKey]) {
+        delete this.rerenderCallbacks[key][updaterRefKey];
+      }
+    };
+
+    return { useSimplexState, destroyListener };
   }
 
   private createStore() {
@@ -27,10 +44,18 @@ export default class {
     return store[key] as ValueType;
   }
 
+  private dispatchRerenderCallbacks(key: string) {
+    if (typeof this.rerenderCallbacks[key] === 'object') {
+      Object.values(this.rerenderCallbacks[key]).forEach((rerenderCallback) => {
+        const newRef = Math.random().toString();
+        rerenderCallback(newRef);
+      })
+    }
+  }
+
   private setState<ValueType>(key: string, value: ValueType) {
-    // clonar ou não clonar o value? es a questão
     const store = this.getStore();
-    const newValue = value;
-    store[key] = newValue;
+    store[key] = value;
+    this.dispatchRerenderCallbacks(key);
   }
 }
