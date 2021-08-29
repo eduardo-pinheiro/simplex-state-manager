@@ -1,36 +1,36 @@
 import { OneAboveAll } from "../OneAboveAll";
 
-type IRerenderFunction = React.Dispatch<React.SetStateAction<string | undefined>>;
+type IDispatchListener = (ref: string | undefined) => void;
 
 export default class {
   private storeKey = Math.random().toString();
-  private rerenderCallbacks: Record<string, Record<string, IRerenderFunction>> = { };
+  private dispatchListeners: Record<string, Record<string, IDispatchListener>> = { };
 
   constructor() {
     this.createStore();
   }
 
-  newUseSimplexState<ValueType>(key: string, setUpdaterRef: IRerenderFunction) {
-    const updaterRefKey: string = Math.random.toString();
+  newUseSimplextState<ValueType>(key: string, dispatchListener: IDispatchListener) {
+    const dispatchKey: string = Math.random.toString();
 
-    if (!this.rerenderCallbacks[key]) {
-      this.rerenderCallbacks[key] = { [updaterRefKey]: setUpdaterRef }
+    if (!this.dispatchListeners[key]) {
+      this.dispatchListeners[key] = { [dispatchKey]: dispatchListener };
     } else {
-      this.rerenderCallbacks[key][updaterRefKey] = setUpdaterRef;
+      this.dispatchListeners[key][dispatchKey] = dispatchListener;
     }
 
     const dispatch = (value: ValueType) => this.setState<ValueType>(key, value);
     const getState = () => this.getState<ValueType>(key);
     const useSimplexState = () => [getState(), dispatch] as [ValueType, (value: ValueType) => void];
     const destroyListener = () => {
-      if (this.rerenderCallbacks?.[key]?.[updaterRefKey]) {
-        delete this.rerenderCallbacks[key][updaterRefKey];
+      if (this.dispatchListeners?.[key]?.[dispatchKey]) {
+        delete this.dispatchListeners[key][dispatchKey];
       }
     };
 
     return { useSimplexState, destroyListener };
   }
-
+  
   private createStore() {
     OneAboveAll.setState(this.storeKey, { });
   }
@@ -45,8 +45,8 @@ export default class {
   }
 
   private dispatchRerenderCallbacks(key: string) {
-    if (typeof this.rerenderCallbacks[key] === 'object') {
-      Object.values(this.rerenderCallbacks[key]).forEach((rerenderCallback) => {
+    if (typeof this.dispatchListeners[key] === 'object') {
+      Object.values(this.dispatchListeners[key]).forEach((rerenderCallback) => {
         const newRef = Math.random().toString();
         rerenderCallback(newRef);
       })
