@@ -28,6 +28,7 @@ export default class {
   }
 
   private setState<ValueType>(key: string, value: ValueType) {
+    // clonar ou não clonar o value? es a questão
     const store = this.getStore();
     const newValue = value;
     store[key] = newValue;
