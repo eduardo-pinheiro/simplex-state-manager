@@ -1,26 +1,26 @@
-import { OneAboveAll } from "../OneAboveAll";
-import { IContextListenerId, IContextType } from "../types";
+import { SuperStore } from "../SuperStore";
+import { IListenerId, IStateType, IListener } from "../../types";
 
-export class Context {
-  private storeId = Math.random().toString();
-  private listeners: Record<IContextType, Record<IContextListenerId, (value: any) => void>> = { };
+export class ContextStore {
+  private storeId = Math.random();
+  private listeners: Record<IStateType, Record<IListenerId, IListener<any>>> = { };
 
   constructor() {
     this.createStore();
   }
 
-  getState<ValueType>(type: IContextType) {
+  getState<ValueType>(type: IStateType) {
     const store = this.getStore();
     return store[type] as ValueType;
   }
 
-  setState<ValueType>(type: IContextType, value: ValueType) {
+  setState<ValueType>(type: IStateType, value: ValueType) {
     const store = this.getStore();
     store[type] = value;
     this.dispatchListeners(type);
   }
 
-  addListener<ValueType>(type: IContextType, listener: (value: ValueType) => void) {
+  addListener<ValueType>(type: IStateType, listener: IListener<ValueType>) {
     const listenerId = Math.random();
 
     if (!this.listeners[type]) {
@@ -32,21 +32,21 @@ export class Context {
     return listenerId;
   }
 
-  destroyListener(type: IContextType, listenerId: IContextListenerId) {
+  destroyListener(type: IStateType, listenerId: IListenerId) {
     if (this.listeners?.[type]?.[listenerId]) {
       delete this.listeners?.[type]?.[listenerId];
     }
   }
 
   private createStore() {
-    OneAboveAll.setState(this.storeId, { });
+    SuperStore.setStore(this.storeId, { });
   }
 
   private getStore() {
-    return OneAboveAll.getState(this.storeId) as Record<string, unknown>;
+    return SuperStore.getStore(this.storeId);
   }
 
-  private dispatchListeners(type: IContextType) {
+  private dispatchListeners(type: IStateType) {
     if (typeof this.listeners[type] === 'object') {
       const state = this.getState(type);
       Object.values(this.listeners[type]).forEach((listener) => {
