@@ -1,3 +1,2 @@
-import Context from './Context';
-
-export { Context };
+export { Context } from './Context';
+export { useSimplexState } from './useSimplexState';

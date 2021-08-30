@@ -1,61 +1,57 @@
 import { OneAboveAll } from "../OneAboveAll";
+import { IContextListenerId, IContextType } from "../types";
 
-type IDispatchListener = (ref: string | undefined) => void;
-
-export default class {
-  private storeKey = Math.random().toString();
-  private dispatchListeners: Record<string, Record<string, IDispatchListener>> = { };
+export class Context {
+  private storeId = Math.random().toString();
+  private listeners: Record<IContextType, Record<IContextListenerId, (value: any) => void>> = { };
 
   constructor() {
     this.createStore();
   }
 
-  newUseSimplextState<ValueType>(key: string, dispatchListener: IDispatchListener) {
-    const dispatchKey: string = Math.random.toString();
+  getState<ValueType>(type: IContextType) {
+    const store = this.getStore();
+    return store[type] as ValueType;
+  }
 
-    if (!this.dispatchListeners[key]) {
-      this.dispatchListeners[key] = { [dispatchKey]: dispatchListener };
+  setState<ValueType>(type: IContextType, value: ValueType) {
+    const store = this.getStore();
+    store[type] = value;
+    this.dispatchListeners(type);
+  }
+
+  addListener<ValueType>(type: IContextType, listener: (value: ValueType) => void) {
+    const listenerId = Math.random();
+
+    if (!this.listeners[type]) {
+      this.listeners[type] = { [listenerId]: listener };
     } else {
-      this.dispatchListeners[key][dispatchKey] = dispatchListener;
+      this.listeners[type][listenerId] = listener;
     }
 
-    const dispatch = (value: ValueType) => this.setState<ValueType>(key, value);
-    const getState = () => this.getState<ValueType>(key);
-    const useSimplexState = () => [getState(), dispatch] as [ValueType, (value: ValueType) => void];
-    const destroyListener = () => {
-      if (this.dispatchListeners?.[key]?.[dispatchKey]) {
-        delete this.dispatchListeners[key][dispatchKey];
-      }
-    };
-
-    return { useSimplexState, destroyListener };
+    return listenerId;
   }
-  
+
+  destroyListener(type: IContextType, listenerId: IContextListenerId) {
+    if (this.listeners?.[type]?.[listenerId]) {
+      delete this.listeners?.[type]?.[listenerId];
+    }
+  }
+
   private createStore() {
-    OneAboveAll.setState(this.storeKey, { });
+    OneAboveAll.setState(this.storeId, { });
   }
 
   private getStore() {
-    return OneAboveAll.getState(this.storeKey) as Record<string, unknown>;
+    return OneAboveAll.getState(this.storeId) as Record<string, unknown>;
   }
 
-  private getState<ValueType>(key: string) {
-    const store = this.getStore();
-    return store[key] as ValueType;
-  }
-
-  private dispatchRerenderCallbacks(key: string) {
-    if (typeof this.dispatchListeners[key] === 'object') {
-      Object.values(this.dispatchListeners[key]).forEach((rerenderCallback) => {
-        const newRef = Math.random().toString();
-        rerenderCallback(newRef);
+  private dispatchListeners(type: IContextType) {
+    if (typeof this.listeners[type] === 'object') {
+      const state = this.getState(type);
+      Object.values(this.listeners[type]).forEach((listener) => {
+        listener(state);
       })
     }
-  }
-
-  private setState<ValueType>(key: string, value: ValueType) {
-    const store = this.getStore();
-    store[key] = value;
-    this.dispatchRerenderCallbacks(key);
   }
 }
